@@ -1,24 +1,15 @@
 from rest_framework import generics
+from django.db.models import Prefetch
 from rest_framework.permissions import IsAuthenticated
-from .models import ProductVariation, Order, OrderItem
-from .serializers import ProductVariationSerializer
+from .models import Product, ProductVariation
+from .serializers import MenuSerializer
 
 
-class ProductVariationListView(generics.ListAPIView):
+class MenuView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
-    queryset = ProductVariation.objects.all()
-    serializer_class = ProductVariationSerializer
+    serializer_class = MenuSerializer
 
-
-# class OrderCreateView(generics.CreateAPIView):
-#     serializer_class = OrderSerializer
-#     permission_classes = [IsAuthenticated]
-
-#     def perform_create(self, serializer):
-#         serializer.save(customer=self.request.user.customer)
-
-
-# class OrderDetailView(generics.RetrieveAPIView):
-#     queryset = Order.objects.all()
-#     serializer_class = OrderSerializer
-#     permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        return Product.objects.filter(active=True).prefetch_related(
+            Prefetch('variations', queryset=ProductVariation.objects.filter(active=True))
+        )

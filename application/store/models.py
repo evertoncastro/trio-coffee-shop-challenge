@@ -11,7 +11,7 @@ class Product(models.Model):
     date_updated = models.DateTimeField(auto_now=True)
 
 class ProductVariation(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variations')
     name = models.CharField(max_length=255)
     active = models.BooleanField(default=True)
     date_created = models.DateTimeField(auto_now_add=True)
