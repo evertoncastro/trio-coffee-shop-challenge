@@ -3,12 +3,12 @@ from rest_framework.response import Response
 from django.db.models import Prefetch
 from rest_framework.permissions import IsAuthenticated
 from .models import Customer, Product, ProductVariation, Order, OrderItem
-from .serializers import MenuSerializer, CreateOrderSerializer
+from .serializers import MenuModelSerializer, CreateOrderSerializer, CreateOrderItemModelSerializer
 
 
 class MenuView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = MenuSerializer
+    serializer_class = MenuModelSerializer
 
     def get_queryset(self):
         return Product.objects.filter(active=True).prefetch_related(
@@ -16,7 +16,7 @@ class MenuView(generics.ListAPIView):
         )
     
 
-class OrderCreateView(generics.CreateAPIView):
+class CreateOrderView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = CreateOrderSerializer
 
@@ -51,3 +51,17 @@ class OrderCreateView(generics.CreateAPIView):
         OrderItem.objects.bulk_create(order_item_models)
         serializer = self.get_serializer(order)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+
+class CreateOrderItemView(generics.CreateAPIView):
+    serializer_class = CreateOrderItemModelSerializer
+    lookup_url_kwarg = 'order_id'
+
+    def get_queryset(self):
+        order_id = self.kwargs.get('order_id')
+        return Order.objects.filter(id=order_id)
+
+    def perform_create(self, serializer):
+        order_id = self.kwargs.get('order_id')
+        order = Order.objects.get(id=order_id)
+        serializer.save(order=order)
