@@ -1,17 +1,25 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 from django.db.models import Prefetch
+from django.contrib.auth.models import User
 from rest_framework.permissions import IsAuthenticated
 from ..permissions import IsOrderItemCustomer, IsOrderItemOrderInWaitingStatus, IsOrderInWaitingStatus
 from ..mixins import MultipleFieldLookupMixin
 from ..models import Customer, Product, ProductVariation, Order, OrderItem
 from ..serializers.customer_serializers import (
+    UserSerializer,
     MenuModelSerializer,
     CreateOrderSerializer,
     CreateOrderItemModelSerializer,
     UpdateOrderItemModelSerializer,
     ReadUpdateModelSerializer
 )
+
+
+class CreateUserView(generics.CreateAPIView):
+    authentication_classes = []
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
 
 class MenuView(generics.ListAPIView):
@@ -62,6 +70,7 @@ class CreateOrderView(generics.CreateAPIView):
     
 
 class ReadUpdateOrderView(generics.RetrieveAPIView, generics.UpdateAPIView):
+    permission_classes = [IsAuthenticated]
     queryset = Order.objects.all()
     serializer_class = ReadUpdateModelSerializer
 

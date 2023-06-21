@@ -1,5 +1,6 @@
 from django.urls import path
 from .views.customer_views import (
+    CreateUserView,
     MenuView, 
     CreateOrderView, 
     CreateOrderItemView, 
@@ -15,6 +16,7 @@ from .views.admin_views import (
 
 
 urlpatterns = [
+    path('user/', CreateUserView.as_view(), name='user-create'),
     path('menu/', MenuView.as_view(), name='menu'),
     path('order/', CreateOrderView.as_view(), name='order'),
     path('order/<int:pk>/', ReadUpdateOrderView.as_view(), name='order-read-update'),
