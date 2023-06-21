@@ -27,6 +27,24 @@ class CreateOrderSerializer(serializers.Serializer):
     order_items = OrderItemSerializer(many=True)
 
 
+class OrderDetailModelSerializer(serializers.ModelSerializer):
+    order_items = serializers.SerializerMethodField()
+    total_price = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Order
+        fields = ['id', 'location', 'status', 'date_created', 'date_updated', 'order_items', 'total_price']
+
+    def get_order_items(self, obj):
+        order_items = obj.order_items.all()
+        return OrderItemSerializer(order_items, many=True).data
+
+    def get_total_price(self, obj):
+        order_items = obj.order_items.all()
+        total_price = sum(item.price * item.quantity for item in order_items)
+        return total_price
+
+
 class CreateOrderItemModelSerializer(serializers.ModelSerializer):
     quantity = serializers.IntegerField(min_value=1)
     item_id = serializers.IntegerField()

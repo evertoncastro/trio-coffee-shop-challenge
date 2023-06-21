@@ -5,7 +5,13 @@ from rest_framework.permissions import IsAuthenticated
 from .permissions import IsOrderItemCustomer
 from .mixins import MultipleFieldLookupMixin
 from .models import Customer, Product, ProductVariation, Order, OrderItem
-from .serializers import MenuModelSerializer, CreateOrderSerializer, CreateOrderItemModelSerializer, UpdateOrderItemModelSerializer
+from .serializers import (
+    MenuModelSerializer,
+    CreateOrderSerializer,
+    CreateOrderItemModelSerializer,
+    UpdateOrderItemModelSerializer,
+    OrderDetailModelSerializer
+)
 
 
 class MenuView(generics.ListAPIView):
@@ -54,6 +60,11 @@ class CreateOrderView(generics.CreateAPIView):
         serializer = self.get_serializer(order)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
+
+class OrderDetailView(generics.RetrieveAPIView):
+    queryset = Order.objects.all()
+    serializer_class = OrderDetailModelSerializer
+
 
 class CreateOrderItemView(generics.CreateAPIView):
     serializer_class = CreateOrderItemModelSerializer

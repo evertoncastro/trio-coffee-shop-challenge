@@ -2,8 +2,9 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth.models import User
-from ..models import Product, ProductVariation, Order, OrderItem, Customer
 from rest_framework_simplejwt.tokens import RefreshToken
+from ..models import Product, ProductVariation, Order, OrderItem, Customer
+from ..serializers import OrderDetailModelSerializer
 
 
 class OrderCreateTestCase(APITestCase):
@@ -213,3 +214,44 @@ class OrderItemDeleteViewTestCase(APITestCase):
 
         # Verify the response status code is 403 Forbidden
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class OrderDetailViewTestCase(APITestCase):
+    def setUp(self):
+        # Create the user and authentication
+        self.user: User = User.objects.create_user(username='testuser', password='testpassword')
+        token: RefreshToken = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(token.access_token)}')
+        self.customer: Customer = Customer.objects.create(user=self.user)
+
+        # Create a test order
+        self.order: Order = Order.objects.create(customer=self.customer, location='in_house')
+
+        # Create a test order item
+        product: Product = Product.objects.create(name='Product 1', price=10.00, active=True)
+        self.product_variation: ProductVariation = ProductVariation.objects.create(product=product, name='Test Product Variation', active=True, price=10.0)
+        self.order_item = OrderItem.objects.create(order=self.order, item_id=self.product_variation.pk, quantity=2, price=10.0)
+        
+    def test_get_order_details(self):
+        url = reverse('order-detail', args=[self.order.id])
+        response = self.client.get(url)
+        # Assert response status code
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Assert response data
+        expected_data = OrderDetailModelSerializer(instance=self.order).data
+        self.assertEqual(response.data, expected_data)
+
+    def test_get_order_details_invalid_order_id(self):
+        url = reverse('order-detail', args=[9999])
+        response = self.client.get(url)
+        # Assert response status code
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_order_details_total_price(self):
+        # Calculate the expected total price
+        total_price = self.product_variation.price * self.order_item.quantity
+        
+        url = reverse('order-detail', args=[self.order.id])
+        response = self.client.get(url)
+        # Assert response data
+        self.assertEqual(response.data['total_price'], total_price)
