@@ -41,7 +41,7 @@ class ReadUpdateModelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'location', 'status', 'date_created', 'date_updated', 'order_items', 'total_price']
+        fields = ['id', 'location', 'status', 'canceled', 'date_created', 'date_updated', 'order_items', 'total_price']
 
     def get_order_items(self, obj):
         order_items = obj.order_items.all()
@@ -51,6 +51,15 @@ class ReadUpdateModelSerializer(serializers.ModelSerializer):
         order_items = obj.order_items.all()
         total_price = sum(item.price * item.quantity for item in order_items)
         return total_price
+    
+    def validate(self, attrs):
+        if self.instance.status == Order.DELIVERED and attrs.get('canceled') == True:
+            raise serializers.ValidationError("Delivered order cannot be canceled")
+        if self.instance.canceled and attrs.get('canceled') == False:
+            raise serializers.ValidationError("Canceled order cannot be released")
+        if self.instance.canceled:
+            raise serializers.ValidationError("Canceled order cannot be updated")
+        return attrs
 
 
 class CreateOrderItemModelSerializer(serializers.ModelSerializer):

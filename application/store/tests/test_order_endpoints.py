@@ -69,6 +69,40 @@ class OrderUpdateViewTestCase(APITestCase):
         self.order.refresh_from_db()
         self.assertNotEqual(self.order.location, invalid_location)
 
+    def test_update_order_canceled_value_to_true(self):
+        url = reverse('order-read-update', args=[self.order.id])
+        payload = {'canceled': True}
+        response = self.client.patch(url, payload)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.order.refresh_from_db()
+        self.assertTrue(self.order.canceled)
+
+    def test_update_order_canceled_value_to_true_when_order_is_delivered(self):
+        order: Order = Order.objects.create(customer=self.customer, location='in_house', status=Order.DELIVERED)
+        url = reverse('order-read-update', args=[order.id])
+        payload = {'canceled': True}
+        response = self.client.patch(url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json(), {'non_field_errors': ['Delivered order cannot be canceled']})
+
+    def test_update_order_canceled_value_to_false(self):
+        order: Order = Order.objects.create(customer=self.customer, location='in_house', canceled=True)
+        url = reverse('order-read-update', args=[order.id])
+        payload = {'canceled': False}
+        response = self.client.patch(url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json(), {'non_field_errors': ['Canceled order cannot be released']})
+
+    def test_update_order_data_after_the_order_is_canceled(self):
+        order: Order = Order.objects.create(customer=self.customer, location='in_house', canceled=True)
+        new_location = 'take_away'
+        url = reverse('order-read-update', args=[order.id])
+        payload = {'location': new_location}
+        response = self.client.patch(url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json(), {'non_field_errors': ['Canceled order cannot be updated']})
+
 
 class CreateOrderItemViewTestCase(APITestCase):
     def setUp(self):
