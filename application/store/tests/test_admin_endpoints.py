@@ -92,7 +92,7 @@ class ProductUpdateViewTestCase(APITestCase):
         }
 
         # Define the URL for updating the product
-        url = reverse('admin-product-update', kwargs={'pk': self.product.id})
+        url = reverse('admin-product-update-delete', kwargs={'pk': self.product.id})
         response = self.client.patch(url, updated_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
@@ -114,3 +114,36 @@ class ProductUpdateViewTestCase(APITestCase):
         self.assertEqual(new_variation.product, self.product)
         self.assertEqual(new_variation.price, 20.0)
         self.assertEqual(new_variation.active, True)
+
+
+class ProductDeleteViewTestCase(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+          username='testuser', password='testpassword', is_superuser=True, is_staff=True)
+        token: RefreshToken = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(token.access_token)}')
+        self.product = Product.objects.create(name='Product 1', active=True)
+
+    def test_delete_product_without_variations(self):
+        url = reverse('admin-product-update-delete', kwargs={'pk': self.product.id})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Product.objects.filter(pk=self.product.id).exists())
+
+    def test_delete_product_with_active_variations(self):
+        ProductVariation.objects.create(product=self.product, name='Variation 1', active=True, price=10.0)
+        url = reverse('admin-product-update-delete', kwargs={'pk': self.product.id})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Product.objects.filter(pk=self.product.id).exists())
+
+    def test_delete_product_with_no_admin_permission(self):
+        user = User.objects.create_user(
+          username='noadmin', password='testpassword', is_superuser=False, is_staff=False)
+        token: RefreshToken = RefreshToken.for_user(user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(token.access_token)}')
+        product: Product = Product.objects.create(name='Product 1', active=True)
+        url = reverse('admin-product-update-delete', kwargs={'pk': product.id})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.json(), {'detail': 'You do not have permission to perform this action.'})
