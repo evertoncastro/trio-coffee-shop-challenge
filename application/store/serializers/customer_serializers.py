@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, ProductVariation, Order, OrderItem
+from ..models import Product, ProductVariation, Order, OrderItem
 
 
 class MenuVariationModelSerializer(serializers.ModelSerializer):

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import MenuView, CreateOrderView, CreateOrderItemView, UpdateDeleteOrderItemView, OrderDetailView
+from .views.customer_views import MenuView, CreateOrderView, CreateOrderItemView, UpdateDeleteOrderItemView, OrderDetailView
 
 urlpatterns = [
     path('menu/', MenuView.as_view(), name='menu'),

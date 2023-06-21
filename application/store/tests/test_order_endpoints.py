@@ -4,7 +4,7 @@ from rest_framework.test import APITestCase
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from ..models import Product, ProductVariation, Order, OrderItem, Customer
-from ..serializers import OrderDetailModelSerializer, CreateOrderSerializer
+from ..serializers.customer_serializers import OrderDetailModelSerializer
 
 
 class OrderCreateTestCase(APITestCase):

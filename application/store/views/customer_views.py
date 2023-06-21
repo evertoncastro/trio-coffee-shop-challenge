@@ -2,10 +2,10 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from django.db.models import Prefetch
 from rest_framework.permissions import IsAuthenticated
-from .permissions import IsOrderItemCustomer, IsOrderItemOrderInWaitingStatus, IsOrderInWaitingStatus
-from .mixins import MultipleFieldLookupMixin
-from .models import Customer, Product, ProductVariation, Order, OrderItem
-from .serializers import (
+from ..permissions import IsOrderItemCustomer, IsOrderItemOrderInWaitingStatus, IsOrderInWaitingStatus
+from ..mixins import MultipleFieldLookupMixin
+from ..models import Customer, Product, ProductVariation, Order, OrderItem
+from ..serializers.customer_serializers import (
     MenuModelSerializer,
     CreateOrderSerializer,
     CreateOrderItemModelSerializer,
