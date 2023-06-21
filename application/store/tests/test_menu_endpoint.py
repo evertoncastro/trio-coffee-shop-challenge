@@ -13,11 +13,11 @@ class MenuViewTest(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(tokan.access_token)}')
 
     def test_menu_view(self):
-        product1 = Product.objects.create(name='Product 1', price=10.00, active=True)
+        product1 = Product.objects.create(name='Product 1', active=True)
         variation1 = ProductVariation.objects.create(product=product1, name='Variation 1', price=12.00, active=True)
         variation2 = ProductVariation.objects.create(product=product1, name='Variation 2', price=15.00, active=False)
 
-        product2 = Product.objects.create(name='Product 2', price=8.00, active=True)
+        product2 = Product.objects.create(name='Product 2', active=True)
         variation3 = ProductVariation.objects.create(product=product2, name='Variation 3', price=10.00, active=True)
 
         url = reverse('menu')
@@ -29,7 +29,6 @@ class MenuViewTest(APITestCase):
         product_data1 = response.data[0]
         self.assertEqual(product_data1['id'], 1)
         self.assertEqual(product_data1['name'], product1.name)
-        self.assertEqual(product_data1['price'], product1.price)
         self.assertEqual(len(product_data1['variations']), 1)
 
         variation_data1 = product_data1['variations'][0]
@@ -40,7 +39,6 @@ class MenuViewTest(APITestCase):
         product_data2 = response.data[1]
         self.assertEqual(product_data2['id'], 2)
         self.assertEqual(product_data2['name'], product2.name)
-        self.assertEqual(product_data2['price'], product2.price)
         self.assertEqual(len(product_data2['variations']), 1)
 
         variation_data3 = product_data2['variations'][0]

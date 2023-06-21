@@ -14,7 +14,7 @@ class OrderCreateTestCase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(token.access_token)}')
     
     def test_create_order(self):
-        product1 = Product.objects.create(name='Product 1', price=10.00, active=True)
+        product1 = Product.objects.create(name='Product 1', active=True)
         product_variation = ProductVariation.objects.create(product=product1, name='Product Variation 1', price=10.0)
         order_data = {
             'location': 'in_house',
@@ -54,7 +54,7 @@ class CreateOrderItemViewTestCase(APITestCase):
         self.order_url = reverse('order-item-create', args=[self.order.id])
 
         # Create a test product variation
-        product1 = Product.objects.create(name='Product 1', price=10.00, active=True)
+        product1 = Product.objects.create(name='Product 1', active=True)
         self.product_variation = ProductVariation.objects.create(
             product=product1, name='Test Product Variation', active=True, price=10
         )
@@ -113,7 +113,7 @@ class OrderItemUpdateViewTestCase(APITestCase):
         self.order: Order = Order.objects.create(customer=self.customer, location='in_house')
 
         # Create a test order item
-        self.product: Product = Product.objects.create(name='Product 1', price=10.00, active=True)
+        self.product: Product = Product.objects.create(name='Product 1', active=True)
         self.product_variation = ProductVariation.objects.create(product=self.product, name='Test Product Variation', active=True, price=10.0)
         self.order_item = OrderItem.objects.create(order=self.order, item_id=self.product_variation.pk, quantity=2, price=10.0)
         self.order_item_url = reverse('order-item-update-delete', args=[self.order.id, self.order_item.id])
@@ -176,7 +176,7 @@ class OrderItemDeleteViewTestCase(APITestCase):
         self.order: Order = Order.objects.create(customer=self.customer, location='in_house')
 
         # Create a test order item
-        product1: Product = Product.objects.create(name='Product 1', price=10.00, active=True)
+        product1: Product = Product.objects.create(name='Product 1', active=True)
         self.product_variation: ProductVariation = ProductVariation.objects.create(product=product1, name='Test Product Variation', active=True, price=10.0)
         self.order_item = OrderItem.objects.create(order=self.order, item_id=self.product_variation.pk, quantity=2, price=10.0)
         self.order_item_url = reverse('order-item-update-delete', args=[self.order.id, self.order_item.id])
@@ -228,7 +228,7 @@ class OrderDetailViewTestCase(APITestCase):
         self.order: Order = Order.objects.create(customer=self.customer, location='in_house')
 
         # Create a test order item
-        product: Product = Product.objects.create(name='Product 1', price=10.00, active=True)
+        product: Product = Product.objects.create(name='Product 1', active=True)
         self.product_variation: ProductVariation = ProductVariation.objects.create(product=product, name='Test Product Variation', active=True, price=10.0)
         self.order_item = OrderItem.objects.create(order=self.order, item_id=self.product_variation.pk, quantity=2, price=10.0)
         
