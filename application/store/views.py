@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from django.db.models import Prefetch
 from rest_framework.permissions import IsAuthenticated
 from .models import Customer, Product, ProductVariation, Order, OrderItem
-from .serializers import MenuModelSerializer, CreateOrderSerializer, CreateOrderItemModelSerializer
+from .serializers import MenuModelSerializer, CreateOrderSerializer, CreateOrderItemModelSerializer, UpdateOrderItemModelSerializer
 
 
 class MenuView(generics.ListAPIView):
@@ -65,3 +65,17 @@ class CreateOrderItemView(generics.CreateAPIView):
         order_id = self.kwargs.get('order_id')
         order = Order.objects.get(id=order_id)
         serializer.save(order=order)
+
+
+class UpdateOrderItemView(generics.UpdateAPIView):
+    serializer_class = UpdateOrderItemModelSerializer
+    queryset = OrderItem.objects.all()
+    lookup_url_kwarg = 'order_item_id'
+
+    def patch(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', True)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)

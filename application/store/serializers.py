@@ -51,3 +51,17 @@ class CreateOrderItemModelSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(f"ProductVariation with id {item_id} does not exist.")
         ModelClass = self.Meta.model
         return ModelClass._default_manager.create(price=product_variation.price, **validated_data)
+    
+
+class UpdateOrderItemModelSerializer(serializers.ModelSerializer):
+    quantity = serializers.IntegerField(min_value=1)
+
+    class Meta:
+        model = OrderItem
+        fields = ['quantity']
+
+    def validate(self, attrs):
+        order_item = self.instance
+        if not order_item:
+            raise serializers.ValidationError("Order item does not exist.")
+        return attrs
