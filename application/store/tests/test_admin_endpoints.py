@@ -147,3 +147,32 @@ class ProductDeleteViewTestCase(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.json(), {'detail': 'You do not have permission to perform this action.'})
+
+
+class ProductVariationDeleteViewTestCase(APITestCase):
+    
+    def setUp(self):
+        self.user = User.objects.create_user(
+          username='testuser', password='testpassword', is_superuser=True, is_staff=True)
+        token: RefreshToken = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(token.access_token)}')
+        self.product = Product.objects.create(name='Product 1', active=True)
+        self.variation = ProductVariation.objects.create(product=self.product, name='Variation 1', active=True, price=10.0)
+
+    def test_delete_product_variation(self):
+        url = reverse('admin-product-variation-delete', args=[self.product.id, self.variation.id])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(ProductVariation.objects.filter(pk=self.variation.id).exists())
+
+    def test_delete_product_variation_for_invalid_product_id(self):
+        url = reverse('admin-product-variation-delete', args=[999, self.variation.id])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.json(), {'detail': 'Not found.'})
+
+    def test_delete_product_variation_for_invalid_product_variation_id(self):
+        url = reverse('admin-product-variation-delete', args=[self.product.id, 999])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.json(), {'detail': 'Not found.'})

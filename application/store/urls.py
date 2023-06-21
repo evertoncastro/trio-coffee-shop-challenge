@@ -6,7 +6,11 @@ from .views.customer_views import (
     UpdateDeleteOrderItemView, 
     ReadUpdateOrderView
 )
-from .views.admin_views import AdminCreateProductView, AdminUpdateProductView
+from .views.admin_views import (
+    AdminCreateProductView,
+    AdminUpdateProductView,
+    AdminDeleteProductVariationView
+)
 
 
 urlpatterns = [
@@ -17,5 +21,6 @@ urlpatterns = [
     path('order/<int:order_id>/order-item/<int:id>/', UpdateDeleteOrderItemView.as_view(), name='order-item-update-delete'),
 
     path('admin/product', AdminCreateProductView.as_view(), name='admin-product-create'),
-    path('admin/product/<int:pk>/', AdminUpdateProductView.as_view(), name='admin-product-update-delete'),
+    path('admin/products/<int:pk>/', AdminUpdateProductView.as_view(), name='admin-product-update-delete'),
+    path('admin/products/<int:product_id>/variations/<int:id>/', AdminDeleteProductVariationView.as_view(), name='admin-product-variation-delete'),
 ]
