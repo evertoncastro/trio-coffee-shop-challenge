@@ -31,9 +31,13 @@ class CreateOrderSerializer(serializers.Serializer):
     date_updated = serializers.CharField(read_only=True)
 
 
-class OrderDetailModelSerializer(serializers.ModelSerializer):
-    order_items = serializers.SerializerMethodField()
-    total_price = serializers.SerializerMethodField()
+class ReadUpdateModelSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
+    status = serializers.CharField(read_only=True)
+    order_items = serializers.SerializerMethodField(read_only=True)
+    total_price = serializers.SerializerMethodField(read_only=True)
+    date_created = serializers.CharField(read_only=True)
+    date_updated = serializers.CharField(read_only=True)
 
     class Meta:
         model = Order

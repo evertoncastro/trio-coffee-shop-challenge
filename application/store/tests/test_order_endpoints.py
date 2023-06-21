@@ -4,7 +4,7 @@ from rest_framework.test import APITestCase
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from ..models import Product, ProductVariation, Order, OrderItem, Customer
-from ..serializers.customer_serializers import OrderDetailModelSerializer
+from ..serializers.customer_serializers import ReadUpdateModelSerializer
 
 
 class OrderCreateTestCase(APITestCase):
@@ -39,6 +39,35 @@ class OrderCreateTestCase(APITestCase):
         self.assertEqual(order_item.name, product_variation.name)
         self.assertEqual(order_item.price, product_variation.price)
         self.assertEqual(order_item.quantity, 2)
+
+
+class OrderUpdateViewTestCase(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='testuser', password='testpassword')
+        token: RefreshToken = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(token.access_token)}')
+        self.customer = Customer.objects.create(user=self.user)
+        self.order: Order = Order.objects.create(customer=self.customer, location='in_house', status='waiting')
+
+    def test_update_order_location(self):
+        new_location = 'take_away'
+        url = reverse('order-read-update', args=[self.order.id])
+        payload = {'location': new_location}
+        response = self.client.patch(url, payload)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.location, new_location)
+
+    def test_update_order_location_invalid_value(self):
+        # Define an invalid location value
+        invalid_location = 'invalid_value'
+        url = reverse('order-read-update', args=[self.order.id])
+        payload = {'location': invalid_location}
+        response = self.client.patch(url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.order.refresh_from_db()
+        self.assertNotEqual(self.order.location, invalid_location)
 
 
 class CreateOrderItemViewTestCase(APITestCase):
@@ -274,16 +303,16 @@ class OrderDetailViewTestCase(APITestCase):
         self.order_item = OrderItem.objects.create(order=self.order, item_id=self.product_variation.pk, quantity=2, price=10.0)
         
     def test_get_order_details(self):
-        url = reverse('order-detail', args=[self.order.id])
+        url = reverse('order-read-update', args=[self.order.id])
         response = self.client.get(url)
         # Assert response status code
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Assert response data
-        expected_data = OrderDetailModelSerializer(instance=self.order).data
+        expected_data = ReadUpdateModelSerializer(instance=self.order).data
         self.assertEqual(response.data, expected_data)
 
     def test_get_order_details_invalid_order_id(self):
-        url = reverse('order-detail', args=[9999])
+        url = reverse('order-read-update', args=[9999])
         response = self.client.get(url)
         # Assert response status code
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -292,7 +321,7 @@ class OrderDetailViewTestCase(APITestCase):
         # Calculate the expected total price
         total_price = self.product_variation.price * self.order_item.quantity
         
-        url = reverse('order-detail', args=[self.order.id])
+        url = reverse('order-read-update', args=[self.order.id])
         response = self.client.get(url)
         # Assert response data
         self.assertEqual(response.data['total_price'], total_price)

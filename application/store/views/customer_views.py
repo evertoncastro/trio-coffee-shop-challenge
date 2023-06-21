@@ -10,7 +10,7 @@ from ..serializers.customer_serializers import (
     CreateOrderSerializer,
     CreateOrderItemModelSerializer,
     UpdateOrderItemModelSerializer,
-    OrderDetailModelSerializer
+    ReadUpdateModelSerializer
 )
 
 
@@ -61,9 +61,9 @@ class CreateOrderView(generics.CreateAPIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
 
-class OrderDetailView(generics.RetrieveAPIView):
+class ReadUpdateOrderView(generics.RetrieveAPIView, generics.UpdateAPIView):
     queryset = Order.objects.all()
-    serializer_class = OrderDetailModelSerializer
+    serializer_class = ReadUpdateModelSerializer
 
 
 class CreateOrderItemView(generics.CreateAPIView):
