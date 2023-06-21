@@ -115,7 +115,7 @@ class OrderItemUpdateViewTestCase(APITestCase):
         product1: Product = Product.objects.create(name='Product 1', price=10.00, active=True)
         self.product_variation = ProductVariation.objects.create(product=product1, name='Test Product Variation', active=True, price=10.0)
         self.order_item = OrderItem.objects.create(order=self.order, item_id=self.product_variation.pk, quantity=2, price=10.0)
-        self.order_item_url = reverse('order-item-update', args=[self.order.id, self.order_item.id])
+        self.order_item_url = reverse('order-item-update-delete', args=[self.order.id, self.order_item.id])
 
     def test_update_order_item_quantity_success(self):
         # Test updating the quantity of an existing order item
@@ -128,7 +128,14 @@ class OrderItemUpdateViewTestCase(APITestCase):
 
     def test_update_order_item_quantity_non_existing_item(self):
         # Test updating the quantity of a non-existing order item 999
-        invalid_order_item_url = reverse('order-item-update', args=[self.order.id, 999])
+        invalid_order_item_url = reverse('order-item-update-delete', args=[self.order.id, 999])
+        payload = {'quantity': 5}
+        response = self.client.patch(invalid_order_item_url, data=payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_order_item_quantity_non_existing_order(self):
+        # Test updating the quantity of a non-existing order 999
+        invalid_order_item_url = reverse('order-item-update-delete', args=[999, self.order_item.id])
         payload = {'quantity': 5}
         response = self.client.patch(invalid_order_item_url, data=payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -139,3 +146,41 @@ class OrderItemUpdateViewTestCase(APITestCase):
         response = self.client.patch(self.order_item_url, data=payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data['quantity'][0], 'Ensure this value is greater than or equal to 1.')
+
+
+class OrderItemDeleteViewTestCase(APITestCase):
+    def setUp(self):
+        # Create the user and authentication
+        self.user: User = User.objects.create_user(username='testuser', password='testpassword')
+        token: RefreshToken = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(token.access_token)}')
+        self.customer: Customer = Customer.objects.create(user=self.user)
+
+        # Create a test order
+        self.order: Order = Order.objects.create(customer=self.customer, location='in_house')
+
+        # Create a test order item
+        product1: Product = Product.objects.create(name='Product 1', price=10.00, active=True)
+        self.product_variation: ProductVariation = ProductVariation.objects.create(product=product1, name='Test Product Variation', active=True, price=10.0)
+        self.order_item = OrderItem.objects.create(order=self.order, item_id=self.product_variation.pk, quantity=2, price=10.0)
+        self.order_item_url = reverse('order-item-update-delete', args=[self.order.id, self.order_item.id])
+
+    def test_delete_order_item_success(self):
+        # Test deleting an existing order item
+        response = self.client.delete(self.order_item_url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Verify the order item is deleted
+        self.assertFalse(OrderItem.objects.filter(id=self.order_item.id).exists())
+
+    def test_delete_order_item_non_existing_item(self):
+        # Test deleting a non-existing order item 999
+        invalid_order_item_url = reverse('order-item-update-delete', args=[self.order.id, 999])
+        response = self.client.delete(invalid_order_item_url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_order_item_non_existing_order(self):
+        # Test deleting an order item from a non-existing order 999
+        invalid_order_item_url = reverse('order-item-update-delete', args=[999, self.order_item.id])
+        response = self.client.delete(invalid_order_item_url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

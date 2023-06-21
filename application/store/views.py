@@ -2,6 +2,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from django.db.models import Prefetch
 from rest_framework.permissions import IsAuthenticated
+from .mixins import MultipleFieldLookupMixin
 from .models import Customer, Product, ProductVariation, Order, OrderItem
 from .serializers import MenuModelSerializer, CreateOrderSerializer, CreateOrderItemModelSerializer, UpdateOrderItemModelSerializer
 
@@ -67,10 +68,10 @@ class CreateOrderItemView(generics.CreateAPIView):
         serializer.save(order=order)
 
 
-class UpdateOrderItemView(generics.UpdateAPIView):
+class UpdateDeleteOrderItemView(MultipleFieldLookupMixin, generics.UpdateAPIView, generics.DestroyAPIView):
     serializer_class = UpdateOrderItemModelSerializer
     queryset = OrderItem.objects.all()
-    lookup_url_kwarg = 'order_item_id'
+    lookup_fields = ('id', 'order_id')
 
     def patch(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', True)
@@ -79,3 +80,8 @@ class UpdateOrderItemView(generics.UpdateAPIView):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response(serializer.data)
+    
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
