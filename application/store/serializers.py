@@ -23,8 +23,12 @@ class OrderItemSerializer(serializers.Serializer):
 
 
 class CreateOrderSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
     location = serializers.ChoiceField(choices=Order.LOCATION_CHOICES)
+    status = serializers.CharField(read_only=True)
     order_items = OrderItemSerializer(many=True)
+    date_created = serializers.CharField(read_only=True)
+    date_updated = serializers.CharField(read_only=True)
 
 
 class OrderDetailModelSerializer(serializers.ModelSerializer):
@@ -48,10 +52,10 @@ class OrderDetailModelSerializer(serializers.ModelSerializer):
 class CreateOrderItemModelSerializer(serializers.ModelSerializer):
     quantity = serializers.IntegerField(min_value=1)
     item_id = serializers.IntegerField()
-
+    price = serializers.DecimalField(10, 2, read_only=True)
     class Meta:
         model = OrderItem
-        fields = ['quantity', 'item_id']
+        fields = ['quantity', 'item_id', 'price']
 
     def validate(self, attrs):
         order_id = self.context.get('view').kwargs.get('order_id')

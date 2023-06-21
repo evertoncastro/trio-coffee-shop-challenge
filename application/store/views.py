@@ -2,7 +2,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from django.db.models import Prefetch
 from rest_framework.permissions import IsAuthenticated
-from .permissions import IsOrderItemCustomer
+from .permissions import IsOrderItemCustomer, IsOrderItemOrderInWaitingStatus, IsOrderInWaitingStatus
 from .mixins import MultipleFieldLookupMixin
 from .models import Customer, Product, ProductVariation, Order, OrderItem
 from .serializers import (
@@ -67,6 +67,7 @@ class OrderDetailView(generics.RetrieveAPIView):
 
 
 class CreateOrderItemView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated, IsOrderInWaitingStatus]
     serializer_class = CreateOrderItemModelSerializer
     lookup_url_kwarg = 'order_id'
 
@@ -77,11 +78,12 @@ class CreateOrderItemView(generics.CreateAPIView):
     def perform_create(self, serializer):
         order_id = self.kwargs.get('order_id')
         order = Order.objects.get(id=order_id)
+        self.check_object_permissions(self.request, order)
         serializer.save(order=order)
 
 
 class UpdateDeleteOrderItemView(MultipleFieldLookupMixin, generics.UpdateAPIView, generics.DestroyAPIView):
-    permission_classes = [IsAuthenticated, IsOrderItemCustomer]
+    permission_classes = [IsAuthenticated, IsOrderItemCustomer, IsOrderItemOrderInWaitingStatus]
     serializer_class = UpdateOrderItemModelSerializer
     queryset = OrderItem.objects.all()
     lookup_fields = ('id', 'order_id')

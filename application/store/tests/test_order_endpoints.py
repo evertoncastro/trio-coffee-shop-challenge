@@ -4,7 +4,7 @@ from rest_framework.test import APITestCase
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from ..models import Product, ProductVariation, Order, OrderItem, Customer
-from ..serializers import OrderDetailModelSerializer
+from ..serializers import OrderDetailModelSerializer, CreateOrderSerializer
 
 
 class OrderCreateTestCase(APITestCase):
@@ -100,6 +100,22 @@ class CreateOrderItemViewTestCase(APITestCase):
             {'non_field_errors': [f'OrderItem with item_id {self.product_variation.id} already exists in the order.']}
         )
 
+    def test_create_order_item_for_order_with_status_different_than_waiting(self):
+        # Test creating an order item with for order with status different than waiting
+        order: Order = Order.objects.create(customer=self.customer, location='in_house', status=Order.PREPARATION)
+        payload = {
+            'quantity': 3,
+            'item_id': self.product_variation.id
+        }
+
+        url = reverse('order-item-create', args=[order.id])
+        response = self.client.post(url, data=payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(
+            response.json(),
+            {'detail': 'The order cannot be modified when it is not in waiting status.'}
+        )
+
 
 class OrderItemUpdateViewTestCase(APITestCase):
     def setUp(self):
@@ -163,6 +179,19 @@ class OrderItemUpdateViewTestCase(APITestCase):
         # Verify the response status code is 403 Forbidden
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_update_order_item_quantity_for_order_with_status_different_than_waiting(self):
+        # Test updating the quantity of an order with status different than waiting
+        order: Order = Order.objects.create(customer=self.customer, location='in_house', status=Order.PREPARATION)
+        order_item: OrderItem = OrderItem.objects.create(order=order, item_id=self.product_variation.pk, quantity=2, price=10.0)
+        payload = {'quantity': 1}
+        url = reverse('order-item-update-delete', args=[order.id, order_item.id])
+        response = self.client.patch(url, data=payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(
+            response.json(),
+            {'detail': 'The order cannot be modified when it is not in waiting status.'}
+        )
+
 
 class OrderItemDeleteViewTestCase(APITestCase):
     def setUp(self):
@@ -214,6 +243,18 @@ class OrderItemDeleteViewTestCase(APITestCase):
 
         # Verify the response status code is 403 Forbidden
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_delete_order_item_for_order_with_status_different_than_waiting(self):
+        # Test delete order item for order with status different than waiting
+        order: Order = Order.objects.create(customer=self.customer, location='in_house', status=Order.PREPARATION)
+        order_item: OrderItem = OrderItem.objects.create(order=order, item_id=self.product_variation.pk, quantity=2, price=10.0)
+        url = reverse('order-item-update-delete', args=[order.id, order_item.id])
+        response = self.client.delete(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(
+            response.json(),
+            {'detail': 'The order cannot be modified when it is not in waiting status.'}
+        )
 
 
 class OrderDetailViewTestCase(APITestCase):
