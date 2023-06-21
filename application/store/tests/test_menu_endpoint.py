@@ -12,13 +12,13 @@ class MenuViewTest(APITestCase):
         tokan: RefreshToken = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(tokan.access_token)}')
 
-    def test_menu_view_with_only_active_items(self):
-        product1 = Product.objects.create(name='Product 1', active=True)
-        variation1 = ProductVariation.objects.create(product=product1, name='Variation 1', active=True)
-        variation2 = ProductVariation.objects.create(product=product1, name='Variation 2', active=False)
+    def test_menu_view(self):
+        product1 = Product.objects.create(name='Product 1', price=10.00, active=True)
+        variation1 = ProductVariation.objects.create(product=product1, name='Variation 1', price=12.00, active=True)
+        variation2 = ProductVariation.objects.create(product=product1, name='Variation 2', price=15.00, active=False)
 
-        product2 = Product.objects.create(name='Product 2', active=True)
-        variation3 = ProductVariation.objects.create(product=product2, name='Variation 3', active=True)
+        product2 = Product.objects.create(name='Product 2', price=8.00, active=True)
+        variation3 = ProductVariation.objects.create(product=product2, name='Variation 3', price=10.00, active=True)
 
         url = reverse('menu')
         response = self.client.get(url)
@@ -27,19 +27,23 @@ class MenuViewTest(APITestCase):
         self.assertEqual(len(response.data), 2)
 
         product_data1 = response.data[0]
-        self.assertEqual(product_data1['id'], product1.id)
+        self.assertEqual(product_data1['id'], 1)
         self.assertEqual(product_data1['name'], product1.name)
+        self.assertEqual(product_data1['price'], product1.price)
         self.assertEqual(len(product_data1['variations']), 1)
 
         variation_data1 = product_data1['variations'][0]
-        self.assertEqual(variation_data1['id'], variation1.id)
+        self.assertEqual(variation_data1['id'], 1)
         self.assertEqual(variation_data1['name'], variation1.name)
+        self.assertEqual(variation_data1['price'], variation1.price)
 
         product_data2 = response.data[1]
-        self.assertEqual(product_data2['id'], product2.id)
+        self.assertEqual(product_data2['id'], 2)
         self.assertEqual(product_data2['name'], product2.name)
+        self.assertEqual(product_data2['price'], product2.price)
         self.assertEqual(len(product_data2['variations']), 1)
 
         variation_data3 = product_data2['variations'][0]
-        self.assertEqual(variation_data3['id'], variation3.id)
+        self.assertEqual(variation_data3['id'], 3)
         self.assertEqual(variation_data3['name'], variation3.name)
+        self.assertEqual(variation_data3['price'], variation3.price)
