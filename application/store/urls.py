@@ -9,7 +9,8 @@ from .views.customer_views import (
 from .views.admin_views import (
     AdminCreateProductView,
     AdminUpdateProductView,
-    AdminDeleteProductVariationView
+    AdminDeleteProductVariationView,
+    AdminUpdateOrderStatusView
 )
 
 
@@ -23,4 +24,5 @@ urlpatterns = [
     path('admin/product', AdminCreateProductView.as_view(), name='admin-product-create'),
     path('admin/products/<int:pk>/', AdminUpdateProductView.as_view(), name='admin-product-update-delete'),
     path('admin/products/<int:product_id>/variations/<int:id>/', AdminDeleteProductVariationView.as_view(), name='admin-product-variation-delete'),
+    path('admin/orders/<int:pk>/status/', AdminUpdateOrderStatusView.as_view(), name='admin-order-status-update'),
 ]

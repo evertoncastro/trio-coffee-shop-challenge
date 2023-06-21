@@ -1,6 +1,5 @@
 from rest_framework import serializers
-from ..models import Product, ProductVariation
-from collections import OrderedDict
+from ..models import Product, ProductVariation, Order
 
 
 class ProductVariationSerializer(serializers.ModelSerializer):
@@ -68,3 +67,9 @@ class UpdateProductSerializer(serializers.ModelSerializer):
                 ProductVariation.objects.create(product=instance, **variation_data)
 
         return instance
+    
+
+class UpdateOrderStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ['status']

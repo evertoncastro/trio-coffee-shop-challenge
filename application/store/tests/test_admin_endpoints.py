@@ -1,9 +1,10 @@
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
+from django.core.mail import outbox
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
-from ..models import Product, ProductVariation
+from ..models import Product, ProductVariation, Order, Customer
 from ..serializers.admin_serializers import ProductSerializer
 
 
@@ -176,3 +177,31 @@ class ProductVariationDeleteViewTestCase(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.json(), {'detail': 'Not found.'})
+
+
+class OrderStatusUpdateViewTestCase(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+          username='testuser', password='testpassword', email='test@example.com', is_superuser=True, is_staff=True)
+        token: RefreshToken = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(token.access_token)}')
+        self.customer: Customer = Customer.objects.create(user=self.user)
+        self.order = Order.objects.create(customer=self.customer, location='in_house', status='waiting')
+
+    def test_update_order_status_and_send_email(self):
+        url = reverse('admin-order-status-update', args=[self.order.id])
+        new_status = Order.PREPARATION
+        expected_email_subject = f"Order Status Updated: Order #{self.order.id}"
+        expected_email_message = f"Dear customer, your order with ID #{self.order.id} has been updated to '{new_status}'."
+
+        response = self.client.patch(url, {'status': new_status})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, new_status)
+
+        # Verify that the email is sent
+        self.assertEqual(len(outbox), 1)
+        self.assertEqual(outbox[0].subject, expected_email_subject)
+        self.assertEqual(outbox[0].body, expected_email_message)
+        self.assertEqual(outbox[0].to, [self.user.email])
