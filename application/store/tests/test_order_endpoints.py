@@ -112,8 +112,8 @@ class OrderItemUpdateViewTestCase(APITestCase):
         self.order: Order = Order.objects.create(customer=self.customer, location='in_house')
 
         # Create a test order item
-        product1: Product = Product.objects.create(name='Product 1', price=10.00, active=True)
-        self.product_variation = ProductVariation.objects.create(product=product1, name='Test Product Variation', active=True, price=10.0)
+        self.product: Product = Product.objects.create(name='Product 1', price=10.00, active=True)
+        self.product_variation = ProductVariation.objects.create(product=self.product, name='Test Product Variation', active=True, price=10.0)
         self.order_item = OrderItem.objects.create(order=self.order, item_id=self.product_variation.pk, quantity=2, price=10.0)
         self.order_item_url = reverse('order-item-update-delete', args=[self.order.id, self.order_item.id])
 
@@ -146,6 +146,21 @@ class OrderItemUpdateViewTestCase(APITestCase):
         response = self.client.patch(self.order_item_url, data=payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data['quantity'][0], 'Ensure this value is greater than or equal to 1.')
+
+    def test_patch_order_item_as_different_customer(self):
+        # Create order with a different customer than the one authenticated
+        other_user: User = User.objects.create_user(username='otheruser', password='testpassword')
+        other_customer: Customer = Customer.objects.create(user=other_user)
+        order: Order = Order.objects.create(customer=other_customer, location='in_house')
+        order_item = OrderItem.objects.create(order=order, item_id=self.product_variation.pk, quantity=2, price=10.0)
+
+        # Send a PATCH request to update the order item
+        data = {'quantity': 5}
+        url = reverse('order-item-update-delete', args=[order.id, order_item.id])
+        response = self.client.patch(url, data)
+
+        # Verify the response status code is 403 Forbidden
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class OrderItemDeleteViewTestCase(APITestCase):
@@ -184,3 +199,17 @@ class OrderItemDeleteViewTestCase(APITestCase):
         invalid_order_item_url = reverse('order-item-update-delete', args=[999, self.order_item.id])
         response = self.client.delete(invalid_order_item_url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_order_item_as_different_customer(self):
+        # Create order with a different customer than the one authenticated
+        other_user: User = User.objects.create_user(username='otheruser', password='testpassword')
+        other_customer: Customer = Customer.objects.create(user=other_user)
+        order: Order = Order.objects.create(customer=other_customer, location='in_house')
+        order_item = OrderItem.objects.create(order=order, item_id=self.product_variation.pk, quantity=2, price=10.0)
+
+        # Send a delete request to update the order item
+        url = reverse('order-item-update-delete', args=[order.id, order_item.id])
+        response = self.client.delete(url)
+
+        # Verify the response status code is 403 Forbidden
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

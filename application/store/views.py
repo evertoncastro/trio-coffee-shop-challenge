@@ -2,6 +2,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from django.db.models import Prefetch
 from rest_framework.permissions import IsAuthenticated
+from .permissions import IsOrderItemCustomer
 from .mixins import MultipleFieldLookupMixin
 from .models import Customer, Product, ProductVariation, Order, OrderItem
 from .serializers import MenuModelSerializer, CreateOrderSerializer, CreateOrderItemModelSerializer, UpdateOrderItemModelSerializer
@@ -69,6 +70,7 @@ class CreateOrderItemView(generics.CreateAPIView):
 
 
 class UpdateDeleteOrderItemView(MultipleFieldLookupMixin, generics.UpdateAPIView, generics.DestroyAPIView):
+    permission_classes = [IsAuthenticated, IsOrderItemCustomer]
     serializer_class = UpdateOrderItemModelSerializer
     queryset = OrderItem.objects.all()
     lookup_fields = ('id', 'order_id')
