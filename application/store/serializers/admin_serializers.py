@@ -5,6 +5,7 @@ from ..models import Product, ProductVariation, Order
 class ProductVariationSerializer(serializers.ModelSerializer):
     date_created = serializers.CharField(read_only=True)
     date_updated = serializers.CharField(read_only=True)
+    active = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = ProductVariation
@@ -14,6 +15,7 @@ class ProductSerializer(serializers.ModelSerializer):
     variations = ProductVariationSerializer(many=True, required=False)
     date_created = serializers.CharField(read_only=True)
     date_updated = serializers.CharField(read_only=True)
+    active = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Product

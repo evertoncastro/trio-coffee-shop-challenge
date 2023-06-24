@@ -36,7 +36,7 @@ class OrderCreateTestCase(APITestCase):
         self.assertEqual(order.order_items.count(), 1)
         
         order_item = order.order_items.first()
-        self.assertEqual(order_item.name, product_variation.name)
+        self.assertEqual(order_item.name, f'{product_variation.product.name} ({product_variation.name})')
         self.assertEqual(order_item.price, product_variation.price)
         self.assertEqual(order_item.quantity, 2)
 
@@ -136,6 +136,7 @@ class CreateOrderItemViewTestCase(APITestCase):
         self.assertEqual(order_item.order, self.order)
         self.assertEqual(order_item.item_id, self.product_variation.pk)
         self.assertEqual(order_item.quantity, payload['quantity'])
+        self.assertEqual(order_item.name, f'{self.product_variation.product.name} ({self.product_variation.name})')
 
     def test_create_order_item_non_existing_variation(self):
         # Test creating an order item with a non-existing product variation

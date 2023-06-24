@@ -14,7 +14,6 @@ from ..serializers.customer_serializers import (
     UpdateOrderItemModelSerializer,
     ReadUpdateModelSerializer
 )
-from django.core.mail import send_mail
 
 
 class CreateUserView(generics.CreateAPIView):
@@ -24,11 +23,7 @@ class CreateUserView(generics.CreateAPIView):
     serializer_class = UserSerializer
 
     def post(self, request, *args, **kwargs):
-        response: User = self.create(request, *args, **kwargs)
-        email_subject = f"Account created"
-        email_message = f"Dear customer {response.data['email']}, your account was created."
-        send_mail(email_subject, email_message, 'coffeeshop@example.com', [response.data['email']])
-        return response
+        return self.create(request, *args, **kwargs)
 
 
 class MenuView(generics.ListAPIView):
@@ -67,8 +62,9 @@ class CreateOrderView(generics.CreateAPIView):
                     {'error': f'ProductVariation with id {variation_id} does not exist'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
+            name = f'{variation.product.name} ({variation.name})' if variation.name != '-' else variation.product.name
             order_item_models.append(
-                OrderItem(order=order, name=variation.name,
+                OrderItem(order=order, name=name,
                 price=variation.price, quantity=quantity,
                 item_id=variation.id)
             )

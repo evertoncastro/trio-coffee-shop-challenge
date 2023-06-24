@@ -34,9 +34,11 @@ class MenuModelSerializer(serializers.ModelSerializer):
 
 
 class OrderItemSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
     product_variation_id = serializers.IntegerField(write_only=True)
     quantity = serializers.IntegerField(min_value=1)
     price = serializers.DecimalField(10, 2, read_only=True)
+    name = serializers.CharField(read_only=True)
     item_id = serializers.IntegerField(read_only=True)
 
 
@@ -81,12 +83,13 @@ class ReadUpdateModelSerializer(serializers.ModelSerializer):
 
 
 class CreateOrderItemModelSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
     quantity = serializers.IntegerField(min_value=1)
     item_id = serializers.IntegerField()
     price = serializers.DecimalField(10, 2, read_only=True)
     class Meta:
         model = OrderItem
-        fields = ['quantity', 'item_id', 'price']
+        fields = ['id', 'quantity', 'item_id', 'price']
 
     def validate(self, attrs):
         order_id = self.context.get('view').kwargs.get('order_id')
@@ -99,11 +102,16 @@ class CreateOrderItemModelSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         item_id = validated_data['item_id']
-        product_variation: ProductVariation = ProductVariation.objects.filter(id=item_id).first()
-        if not product_variation:
+        variation: ProductVariation = ProductVariation.objects.filter(id=item_id).first()
+        if not variation:
             raise serializers.ValidationError(f"ProductVariation with id {item_id} does not exist.")
         ModelClass = self.Meta.model
-        return ModelClass._default_manager.create(price=product_variation.price, **validated_data)
+        name = f'{variation.product.name} ({variation.name})' if variation.name != '-' else variation.product.name
+        return ModelClass._default_manager.create(
+            price=variation.price, 
+            name=name,
+            **validated_data
+        )
     
 
 class UpdateOrderItemModelSerializer(serializers.ModelSerializer):
