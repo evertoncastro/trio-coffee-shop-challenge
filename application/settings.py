@@ -76,6 +76,7 @@ REST_FRAMEWORK = {
 
 SWAGGER_SETTINGS = {
     'DEFAULT_INFO': 'application.urls.swagger_info',
+    'USE_SESSION_AUTH': False
 }
 
 
@@ -93,6 +94,7 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
 
 
 # Password validation
@@ -135,3 +137,8 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = '127.0.0.1'
+EMAIL_PORT = '1025'

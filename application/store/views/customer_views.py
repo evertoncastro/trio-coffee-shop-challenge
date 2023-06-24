@@ -14,12 +14,21 @@ from ..serializers.customer_serializers import (
     UpdateOrderItemModelSerializer,
     ReadUpdateModelSerializer
 )
+from django.core.mail import send_mail
 
 
 class CreateUserView(generics.CreateAPIView):
     authentication_classes = []
+    permission_classes = []
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+    def post(self, request, *args, **kwargs):
+        response: User = self.create(request, *args, **kwargs)
+        email_subject = f"Account created"
+        email_message = f"Dear customer {response.data['email']}, your account was created."
+        send_mail(email_subject, email_message, 'coffeeshop@example.com', [response.data['email']])
+        return response
 
 
 class MenuView(generics.ListAPIView):
