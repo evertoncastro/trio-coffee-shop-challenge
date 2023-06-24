@@ -1,7 +1,8 @@
 from django.urls import reverse
+from mock import patch
 from rest_framework.test import APITestCase
 from rest_framework import status
-from django.core.mail import outbox
+from django.conf import settings
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from ..models import Product, ProductVariation, Order, Customer
@@ -188,7 +189,8 @@ class OrderStatusUpdateViewTestCase(APITestCase):
         self.customer: Customer = Customer.objects.create(user=self.user)
         self.order = Order.objects.create(customer=self.customer, location='in_house', status='waiting')
 
-    def test_update_order_status_and_send_email(self):
+    @patch("application.store.views.admin_views.send_mail")
+    def test_update_order_status_and_send_email(self, spy_send_email):
         url = reverse('admin-order-status-update', args=[self.order.id])
         new_status = Order.PREPARATION
         expected_email_subject = f"Order Status Updated: Order #{self.order.id}"
@@ -200,8 +202,7 @@ class OrderStatusUpdateViewTestCase(APITestCase):
         self.order.refresh_from_db()
         self.assertEqual(self.order.status, new_status)
 
-        # Verify that the email is sent
-        self.assertEqual(len(outbox), 1)
-        self.assertEqual(outbox[0].subject, expected_email_subject)
-        self.assertEqual(outbox[0].body, expected_email_message)
-        self.assertEqual(outbox[0].to, [self.user.email])
+        # # Verify that the email is sent
+        spy_send_email.assert_called_with(
+            expected_email_subject, expected_email_message, settings.EMAIL_SENDER, [self.user.email]
+        )

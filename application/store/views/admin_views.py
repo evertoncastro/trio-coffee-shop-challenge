@@ -8,6 +8,7 @@ from ..serializers.admin_serializers import (
     ProductSerializer, UpdateProductSerializer, UpdateOrderStatusSerializer
 )
 from django.core.mail import send_mail
+from django.conf import settings
 
 
 class AdminCreateProductView(generics.CreateAPIView):
@@ -48,5 +49,5 @@ class AdminUpdateOrderStatusView(generics.UpdateAPIView):
         # Send email to the customer user
         email_subject = f"Order Status Updated: Order #{instance.id}"
         email_message = f"Dear customer, your order with ID #{instance.id} has been updated to '{instance.status}'."
-        data = send_mail(email_subject, email_message, 'from@example.com', [instance.customer.user.email])
+        data = send_mail(email_subject, email_message, settings.EMAIL_SENDER, [instance.customer.user.email])
         print(data)

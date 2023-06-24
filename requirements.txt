@@ -3,3 +3,4 @@ djangorestframework==3.14.0
 djangorestframework-simplejwt==5.2.2
 django-mysql==3.8.1
 drf-yasg==1.21.6
+mock==5.0.2
