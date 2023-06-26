@@ -83,8 +83,8 @@ class OrderUpdateViewTestCase(APITestCase):
         url = reverse('order-read-update', args=[order.id])
         payload = {'canceled': True}
         response = self.client.patch(url, payload)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json(), {'non_field_errors': ['Delivered order cannot be canceled']})
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.json(), {'detail': 'The order cannot be modified when it is not in waiting status.'})
 
     def test_update_order_canceled_value_to_false(self):
         order: Order = Order.objects.create(customer=self.customer, location='in_house', canceled=True)

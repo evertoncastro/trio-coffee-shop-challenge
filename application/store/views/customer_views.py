@@ -75,9 +75,16 @@ class CreateOrderView(generics.CreateAPIView):
     
 
 class ReadUpdateOrderView(generics.RetrieveAPIView, generics.UpdateAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOrderInWaitingStatus]
     queryset = Order.objects.all()
     serializer_class = ReadUpdateModelSerializer
+
+    def check_object_permissions(self, request, obj):
+        try:
+            super().check_object_permissions(request, obj)
+        except Exception as e:
+            if request.method != 'GET':
+                raise e
 
 
 class CreateOrderItemView(generics.CreateAPIView):
