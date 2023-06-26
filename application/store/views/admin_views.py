@@ -51,8 +51,10 @@ class AdminUpdateOrderStatusView(generics.UpdateAPIView):
     def perform_update(self, serializer):
         instance: Order = serializer.save()
         # Send email to the customer user
-        message = f"""Dear customer, your order with ID #{instance.id}
-        has been updated to '{instance.status}'."""
+        message = f"""
+        Dear customer, your order with ID #{instance.id}
+        has been updated to '{instance.status}'.
+        """
         email_subject = f"Order Status Updated: Order #{instance.id}"
         email_message = message
         data = send_mail(

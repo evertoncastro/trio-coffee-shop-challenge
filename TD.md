@@ -61,7 +61,7 @@ Description: Delete a specific variation.
 
 ## Technologies:
 - Programming Language: Python
-- Framework: Django
+- Framework: Django +Django Rest Framework
 - Database: SQLite
 - Authentication: JWT (JSON Web Tokens)
 - Email Notification Service: MailHog
@@ -79,3 +79,18 @@ Description: Delete a specific variation.
 - Authentication and Security: Django provides a robust authentication system out-of-the-box, including user management, password hashing, and session handling. Additionally, Django supports integration with JWT for implementing token-based authentication.
 
 - ORM and Database Support: Django's ORM simplifies database interactions by abstracting the underlying database implementation. It supports multiple databases, including PostgreSQL and MySQL, allowing flexibility in choosing the most suitable database for the project. The ORM handles tasks like query generation, data validation, and migration management, reducing the complexity of database operations.
+
+
+### Project structure
+
+The project structure plays a crucial role in the organization, readability, and maintainability of a Django application
+
+Inside the application directory you can find a single app directory called ```store/``` that contains all the components of the application described above.
+
+![plot](./p-tree.png)
+
+The Django Rest Framework (DRF) provides a set of powerful features and tools to build RESTful APIs with Django. One of the key components of DRF is its support for *generic views*, which are pre-built views that offer common functionalities for CRUD operations (Create, Retrieve, Update, Delete) on model instances.
+
+In the proposed project for managing orders and customization of products, the usage of DRF generic views can greatly simplify the implementation of CRUD operations for the different entities involved taking advantage of code reusability.
+
+Overall, the suggested project structure follows the common conventions and best practices of Django development. It promotes separation of concerns, modularity, and organization, making it easier to navigate, maintain, and extend the application in the future.

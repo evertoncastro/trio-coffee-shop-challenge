@@ -218,8 +218,10 @@ class OrderStatusUpdateViewTestCase(APITestCase):
         url = reverse("admin-order-status-update", args=[self.order.id])
         new_status = Order.PREPARATION
         expected_email_subject = f"Order Status Updated: Order #{self.order.id}"
-        expected_email_message = f"""Dear customer, your order with ID #{self.order.id}
-        has been updated to '{new_status}'."""
+        expected_email_message = f"""
+        Dear customer, your order with ID #{self.order.id}
+        has been updated to '{new_status}'.
+        """
 
         response = self.client.patch(url, {"status": new_status})
         self.assertEqual(response.status_code, status.HTTP_200_OK)

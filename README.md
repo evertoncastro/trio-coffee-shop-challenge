@@ -1,4 +1,4 @@
-# Technical Design: Trio Coffee Shop Challenge
+# Trio Coffee Shop Challenge
 
 This repository contains a Django application for managing orders and customization of products. The application provides a REST API that allows managers to customize products and order statuses, while customers can place orders, customize their orders, and view order details. 
 
