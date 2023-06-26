@@ -5,7 +5,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser
 from ..mixins import MultipleFieldLookupMixin
 from ..serializers.admin_serializers import (
-    ProductSerializer, UpdateProductSerializer, UpdateOrderStatusSerializer
+    ProductSerializer,
+    UpdateProductSerializer,
+    UpdateOrderStatusSerializer,
 )
 from django.core.mail import send_mail
 from django.conf import settings
@@ -28,16 +30,18 @@ class AdminUpdateProductView(generics.UpdateAPIView, generics.DestroyAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class AdminDeleteProductVariationView(MultipleFieldLookupMixin, generics.DestroyAPIView):
+class AdminDeleteProductVariationView(
+    MultipleFieldLookupMixin, generics.DestroyAPIView
+):
     permission_classes = [IsAdminUser]
     queryset = ProductVariation.objects.all()
-    lookup_fields = ('product_id', 'id')
+    lookup_fields = ("product_id", "id")
 
     def delete(self, request, *args, **kwargs):
         instance = self.get_object()
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+
 
 class AdminUpdateOrderStatusView(generics.UpdateAPIView):
     permission_classes = [IsAdminUser]
@@ -47,7 +51,14 @@ class AdminUpdateOrderStatusView(generics.UpdateAPIView):
     def perform_update(self, serializer):
         instance: Order = serializer.save()
         # Send email to the customer user
+        message = f"""Dear customer, your order with ID #{instance.id}
+        has been updated to '{instance.status}'."""
         email_subject = f"Order Status Updated: Order #{instance.id}"
-        email_message = f"Dear customer, your order with ID #{instance.id} has been updated to '{instance.status}'."
-        data = send_mail(email_subject, email_message, settings.EMAIL_SENDER, [instance.customer.user.email])
+        email_message = message
+        data = send_mail(
+            email_subject,
+            email_message,
+            settings.EMAIL_SENDER,
+            [instance.customer.user.email],
+        )
         print(data)

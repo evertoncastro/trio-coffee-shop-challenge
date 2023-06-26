@@ -8,3 +8,9 @@ delete-db:
 
 run-tests:
 	python manage.py test --settings=application.settings --keepdb -v 2
+
+run-flake8:
+	flake8 application
+
+run-formater:
+	black application

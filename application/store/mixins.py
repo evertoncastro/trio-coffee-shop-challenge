@@ -7,6 +7,7 @@ class MultipleFieldLookupMixin(object):
     Apply this mixin to any view or viewset to get multiple field filtering
     based on a `lookup_fields` attribute, instead of the default single field filtering.
     """
+
     def get_object(self: GenericAPIView):
         queryset = self.get_queryset()
         queryset = self.filter_queryset(queryset)

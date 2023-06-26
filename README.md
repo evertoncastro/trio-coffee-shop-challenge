@@ -36,3 +36,13 @@ make run-server
 ```
 make run-tests
 ```
+
+## Linter
+
+```
+make run-flake8
+```
+
+```
+make formater
+```

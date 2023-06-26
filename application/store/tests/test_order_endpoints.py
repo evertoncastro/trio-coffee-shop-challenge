@@ -9,50 +9,58 @@ from ..serializers.customer_serializers import ReadUpdateModelSerializer
 
 class OrderCreateTestCase(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username='testuser', password='testpassword')
+        self.user = User.objects.create_user(
+            username="testuser", password="testpassword"
+        )
         token: RefreshToken = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(token.access_token)}')
-    
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {str(token.access_token)}")
+
     def test_create_order(self):
-        product1 = Product.objects.create(name='Product 1', active=True)
-        product_variation = ProductVariation.objects.create(product=product1, name='Product Variation 1', price=10.0)
+        product1 = Product.objects.create(name="Product 1", active=True)
+        product_variation = ProductVariation.objects.create(
+            product=product1, name="Product Variation 1", price=10.0
+        )
         order_data = {
-            'location': 'in_house',
-            'order_items': [
-                {
-                    'product_variation_id': product_variation.id,
-                    'quantity': 2
-                }
-            ]
+            "location": "in_house",
+            "order_items": [
+                {"product_variation_id": product_variation.id, "quantity": 2}
+            ],
         }
 
-        url = reverse('order')
-        response = self.client.post(url, order_data, format='json')
+        url = reverse("order")
+        response = self.client.post(url, order_data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         order = Order.objects.last()
         self.assertEqual(order.customer.user, self.user)
-        self.assertEqual(order.location, 'in_house')
+        self.assertEqual(order.location, "in_house")
         self.assertEqual(order.order_items.count(), 1)
-        
+
         order_item = order.order_items.first()
-        self.assertEqual(order_item.name, f'{product_variation.product.name} ({product_variation.name})')
+        self.assertEqual(
+            order_item.name,
+            f"{product_variation.product.name} ({product_variation.name})",
+        )
         self.assertEqual(order_item.price, product_variation.price)
         self.assertEqual(order_item.quantity, 2)
 
 
 class OrderUpdateViewTestCase(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username='testuser', password='testpassword')
+        self.user = User.objects.create_user(
+            username="testuser", password="testpassword"
+        )
         token: RefreshToken = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(token.access_token)}')
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {str(token.access_token)}")
         self.customer = Customer.objects.create(user=self.user)
-        self.order: Order = Order.objects.create(customer=self.customer, location='in_house', status='waiting')
+        self.order: Order = Order.objects.create(
+            customer=self.customer, location="in_house", status="waiting"
+        )
 
     def test_update_order_location(self):
-        new_location = 'take_away'
-        url = reverse('order-read-update', args=[self.order.id])
-        payload = {'location': new_location}
+        new_location = "take_away"
+        url = reverse("order-read-update", args=[self.order.id])
+        payload = {"location": new_location}
         response = self.client.patch(url, payload)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -61,17 +69,17 @@ class OrderUpdateViewTestCase(APITestCase):
 
     def test_update_order_location_invalid_value(self):
         # Define an invalid location value
-        invalid_location = 'invalid_value'
-        url = reverse('order-read-update', args=[self.order.id])
-        payload = {'location': invalid_location}
+        invalid_location = "invalid_value"
+        url = reverse("order-read-update", args=[self.order.id])
+        payload = {"location": invalid_location}
         response = self.client.patch(url, payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.order.refresh_from_db()
         self.assertNotEqual(self.order.location, invalid_location)
 
     def test_update_order_canceled_value_to_true(self):
-        url = reverse('order-read-update', args=[self.order.id])
-        payload = {'canceled': True}
+        url = reverse("order-read-update", args=[self.order.id])
+        payload = {"canceled": True}
         response = self.client.patch(url, payload)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -79,200 +87,265 @@ class OrderUpdateViewTestCase(APITestCase):
         self.assertTrue(self.order.canceled)
 
     def test_update_order_canceled_value_to_true_when_order_is_delivered(self):
-        order: Order = Order.objects.create(customer=self.customer, location='in_house', status=Order.DELIVERED)
-        url = reverse('order-read-update', args=[order.id])
-        payload = {'canceled': True}
+        order: Order = Order.objects.create(
+            customer=self.customer, location="in_house", status=Order.DELIVERED
+        )
+        url = reverse("order-read-update", args=[order.id])
+        payload = {"canceled": True}
         response = self.client.patch(url, payload)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(response.json(), {'detail': 'The order cannot be modified when it is not in waiting status.'})
+        self.assertEqual(
+            response.json(),
+            {
+                "detail": "The order cannot be modified when it is not in waiting status."
+            },
+        )
 
     def test_update_order_canceled_value_to_false(self):
-        order: Order = Order.objects.create(customer=self.customer, location='in_house', canceled=True)
-        url = reverse('order-read-update', args=[order.id])
-        payload = {'canceled': False}
+        order: Order = Order.objects.create(
+            customer=self.customer, location="in_house", canceled=True
+        )
+        url = reverse("order-read-update", args=[order.id])
+        payload = {"canceled": False}
         response = self.client.patch(url, payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json(), {'non_field_errors': ['Canceled order cannot be released']})
+        self.assertEqual(
+            response.json(), {"non_field_errors": ["Canceled order cannot be released"]}
+        )
 
     def test_update_order_data_after_the_order_is_canceled(self):
-        order: Order = Order.objects.create(customer=self.customer, location='in_house', canceled=True)
-        new_location = 'take_away'
-        url = reverse('order-read-update', args=[order.id])
-        payload = {'location': new_location}
+        order: Order = Order.objects.create(
+            customer=self.customer, location="in_house", canceled=True
+        )
+        new_location = "take_away"
+        url = reverse("order-read-update", args=[order.id])
+        payload = {"location": new_location}
         response = self.client.patch(url, payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json(), {'non_field_errors': ['Canceled order cannot be updated']})
+        self.assertEqual(
+            response.json(), {"non_field_errors": ["Canceled order cannot be updated"]}
+        )
 
 
 class CreateOrderItemViewTestCase(APITestCase):
     def setUp(self):
         # Create the user and authentication
-        self.user = User.objects.create_user(username='testuser', password='testpassword')
+        self.user = User.objects.create_user(
+            username="testuser", password="testpassword"
+        )
         token: RefreshToken = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(token.access_token)}')
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {str(token.access_token)}")
         self.customer = Customer.objects.create(user=self.user)
 
         # Create a test order
-        self.order = Order.objects.create(customer=self.customer, location='in_house')
-        self.order_url = reverse('order-item-create', args=[self.order.id])
+        self.order = Order.objects.create(customer=self.customer, location="in_house")
+        self.order_url = reverse("order-item-create", args=[self.order.id])
 
         # Create a test product variation
-        product1 = Product.objects.create(name='Product 1', active=True)
+        product1 = Product.objects.create(name="Product 1", active=True)
         self.product_variation = ProductVariation.objects.create(
-            product=product1, name='Test Product Variation', active=True, price=10
+            product=product1, name="Test Product Variation", active=True, price=10
         )
 
     def test_create_order_item_success(self):
         # Test creating a new order item
-        payload = {
-            'quantity': 2,
-            'item_id': self.product_variation.id
-        }
+        payload = {"quantity": 2, "item_id": self.product_variation.id}
 
-        response = self.client.post(self.order_url, data=payload, format='json')
+        response = self.client.post(self.order_url, data=payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         order_item = OrderItem.objects.last()
         self.assertEqual(order_item.order, self.order)
         self.assertEqual(order_item.item_id, self.product_variation.pk)
-        self.assertEqual(order_item.quantity, payload['quantity'])
-        self.assertEqual(order_item.name, f'{self.product_variation.product.name} ({self.product_variation.name})')
+        self.assertEqual(order_item.quantity, payload["quantity"])
+        self.assertEqual(
+            order_item.name,
+            f"{self.product_variation.product.name} ({self.product_variation.name})",
+        )
 
     def test_create_order_item_non_existing_variation(self):
         # Test creating an order item with a non-existing product variation
-        payload = {
-            'quantity': 3,
-            'item_id': 0  # Non-existing product variation ID
-        }
+        payload = {"quantity": 3, "item_id": 0}  # Non-existing product variation ID
 
-        response = self.client.post(self.order_url, data=payload, format='json')
+        response = self.client.post(self.order_url, data=payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json(), ['ProductVariation with id 0 does not exist.'])
+        self.assertEqual(
+            response.json(), ["ProductVariation with id 0 does not exist."]
+        )
 
     def test_create_order_item_duplicate_item(self):
         # Test creating an order item with an item ID that already exists in the order
-        OrderItem.objects.create(order=self.order, item_id=self.product_variation.pk, quantity=2, price=10.0)
-        payload = {
-            'quantity': 3,
-            'item_id': self.product_variation.id
-        }
+        OrderItem.objects.create(
+            order=self.order, item_id=self.product_variation.pk, quantity=2, price=10.0
+        )
+        payload = {"quantity": 3, "item_id": self.product_variation.id}
 
-        response = self.client.post(self.order_url, data=payload, format='json')
+        response = self.client.post(self.order_url, data=payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             response.json(),
-            {'non_field_errors': [f'OrderItem with item_id {self.product_variation.id} already exists in the order.']}
+            {
+                "non_field_errors": [
+                    f"OrderItem with item_id {self.product_variation.id} already exists in the order."
+                ]
+            },
         )
 
     def test_create_order_item_for_order_with_status_different_than_waiting(self):
         # Test creating an order item with for order with status different than waiting
-        order: Order = Order.objects.create(customer=self.customer, location='in_house', status=Order.PREPARATION)
-        payload = {
-            'quantity': 3,
-            'item_id': self.product_variation.id
-        }
+        order: Order = Order.objects.create(
+            customer=self.customer, location="in_house", status=Order.PREPARATION
+        )
+        payload = {"quantity": 3, "item_id": self.product_variation.id}
 
-        url = reverse('order-item-create', args=[order.id])
-        response = self.client.post(url, data=payload, format='json')
+        url = reverse("order-item-create", args=[order.id])
+        response = self.client.post(url, data=payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(
             response.json(),
-            {'detail': 'The order cannot be modified when it is not in waiting status.'}
+            {
+                "detail": "The order cannot be modified when it is not in waiting status."
+            },
         )
 
 
 class OrderItemUpdateViewTestCase(APITestCase):
     def setUp(self):
         # Create the user and authentication
-        self.user: User = User.objects.create_user(username='testuser', password='testpassword')
+        self.user: User = User.objects.create_user(
+            username="testuser", password="testpassword"
+        )
         token: RefreshToken = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(token.access_token)}')
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {str(token.access_token)}")
         self.customer: Customer = Customer.objects.create(user=self.user)
 
         # Create a test order
-        self.order: Order = Order.objects.create(customer=self.customer, location='in_house')
+        self.order: Order = Order.objects.create(
+            customer=self.customer, location="in_house"
+        )
 
         # Create a test order item
-        self.product: Product = Product.objects.create(name='Product 1', active=True)
-        self.product_variation = ProductVariation.objects.create(product=self.product, name='Test Product Variation', active=True, price=10.0)
-        self.order_item = OrderItem.objects.create(order=self.order, item_id=self.product_variation.pk, quantity=2, price=10.0)
-        self.order_item_url = reverse('order-item-update-delete', args=[self.order.id, self.order_item.id])
+        self.product: Product = Product.objects.create(name="Product 1", active=True)
+        self.product_variation = ProductVariation.objects.create(
+            product=self.product, name="Test Product Variation", active=True, price=10.0
+        )
+        self.order_item = OrderItem.objects.create(
+            order=self.order, item_id=self.product_variation.pk, quantity=2, price=10.0
+        )
+        self.order_item_url = reverse(
+            "order-item-update-delete", args=[self.order.id, self.order_item.id]
+        )
 
     def test_update_order_item_quantity_success(self):
         # Test updating the quantity of an existing order item
-        payload = {'quantity': 5}
-        response = self.client.patch(self.order_item_url, data=payload, format='json')
+        payload = {"quantity": 5}
+        response = self.client.patch(self.order_item_url, data=payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         order_item = OrderItem.objects.get(id=self.order_item.id)
-        self.assertEqual(order_item.quantity, payload['quantity'])
+        self.assertEqual(order_item.quantity, payload["quantity"])
 
     def test_update_order_item_quantity_non_existing_item(self):
         # Test updating the quantity of a non-existing order item 999
-        invalid_order_item_url = reverse('order-item-update-delete', args=[self.order.id, 999])
-        payload = {'quantity': 5}
-        response = self.client.patch(invalid_order_item_url, data=payload, format='json')
+        invalid_order_item_url = reverse(
+            "order-item-update-delete", args=[self.order.id, 999]
+        )
+        payload = {"quantity": 5}
+        response = self.client.patch(
+            invalid_order_item_url, data=payload, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_order_item_quantity_non_existing_order(self):
         # Test updating the quantity of a non-existing order 999
-        invalid_order_item_url = reverse('order-item-update-delete', args=[999, self.order_item.id])
-        payload = {'quantity': 5}
-        response = self.client.patch(invalid_order_item_url, data=payload, format='json')
+        invalid_order_item_url = reverse(
+            "order-item-update-delete", args=[999, self.order_item.id]
+        )
+        payload = {"quantity": 5}
+        response = self.client.patch(
+            invalid_order_item_url, data=payload, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_order_item_quantity_invalid_quantity(self):
         # Test updating the quantity of an order item with an invalid quantity 0
-        payload = {'quantity': 0}
-        response = self.client.patch(self.order_item_url, data=payload, format='json')
+        payload = {"quantity": 0}
+        response = self.client.patch(self.order_item_url, data=payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['quantity'][0], 'Ensure this value is greater than or equal to 1.')
+        self.assertEqual(
+            response.data["quantity"][0],
+            "Ensure this value is greater than or equal to 1.",
+        )
 
     def test_patch_order_item_as_different_customer(self):
         # Create order with a different customer than the one authenticated
-        other_user: User = User.objects.create_user(username='otheruser', password='testpassword')
+        other_user: User = User.objects.create_user(
+            username="otheruser", password="testpassword"
+        )
         other_customer: Customer = Customer.objects.create(user=other_user)
-        order: Order = Order.objects.create(customer=other_customer, location='in_house')
-        order_item = OrderItem.objects.create(order=order, item_id=self.product_variation.pk, quantity=2, price=10.0)
+        order: Order = Order.objects.create(
+            customer=other_customer, location="in_house"
+        )
+        order_item = OrderItem.objects.create(
+            order=order, item_id=self.product_variation.pk, quantity=2, price=10.0
+        )
 
         # Send a PATCH request to update the order item
-        data = {'quantity': 5}
-        url = reverse('order-item-update-delete', args=[order.id, order_item.id])
+        data = {"quantity": 5}
+        url = reverse("order-item-update-delete", args=[order.id, order_item.id])
         response = self.client.patch(url, data)
 
         # Verify the response status code is 403 Forbidden
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_update_order_item_quantity_for_order_with_status_different_than_waiting(self):
+    def test_update_order_item_quantity_for_order_with_status_different_than_waiting(
+        self,
+    ):
         # Test updating the quantity of an order with status different than waiting
-        order: Order = Order.objects.create(customer=self.customer, location='in_house', status=Order.PREPARATION)
-        order_item: OrderItem = OrderItem.objects.create(order=order, item_id=self.product_variation.pk, quantity=2, price=10.0)
-        payload = {'quantity': 1}
-        url = reverse('order-item-update-delete', args=[order.id, order_item.id])
-        response = self.client.patch(url, data=payload, format='json')
+        order: Order = Order.objects.create(
+            customer=self.customer, location="in_house", status=Order.PREPARATION
+        )
+        order_item: OrderItem = OrderItem.objects.create(
+            order=order, item_id=self.product_variation.pk, quantity=2, price=10.0
+        )
+        payload = {"quantity": 1}
+        url = reverse("order-item-update-delete", args=[order.id, order_item.id])
+        response = self.client.patch(url, data=payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(
             response.json(),
-            {'detail': 'The order cannot be modified when it is not in waiting status.'}
+            {
+                "detail": "The order cannot be modified when it is not in waiting status."
+            },
         )
 
 
 class OrderItemDeleteViewTestCase(APITestCase):
     def setUp(self):
         # Create the user and authentication
-        self.user: User = User.objects.create_user(username='testuser', password='testpassword')
+        self.user: User = User.objects.create_user(
+            username="testuser", password="testpassword"
+        )
         token: RefreshToken = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(token.access_token)}')
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {str(token.access_token)}")
         self.customer: Customer = Customer.objects.create(user=self.user)
 
         # Create a test order
-        self.order: Order = Order.objects.create(customer=self.customer, location='in_house')
+        self.order: Order = Order.objects.create(
+            customer=self.customer, location="in_house"
+        )
 
         # Create a test order item
-        product1: Product = Product.objects.create(name='Product 1', active=True)
-        self.product_variation: ProductVariation = ProductVariation.objects.create(product=product1, name='Test Product Variation', active=True, price=10.0)
-        self.order_item = OrderItem.objects.create(order=self.order, item_id=self.product_variation.pk, quantity=2, price=10.0)
-        self.order_item_url = reverse('order-item-update-delete', args=[self.order.id, self.order_item.id])
+        product1: Product = Product.objects.create(name="Product 1", active=True)
+        self.product_variation: ProductVariation = ProductVariation.objects.create(
+            product=product1, name="Test Product Variation", active=True, price=10.0
+        )
+        self.order_item = OrderItem.objects.create(
+            order=self.order, item_id=self.product_variation.pk, quantity=2, price=10.0
+        )
+        self.order_item_url = reverse(
+            "order-item-update-delete", args=[self.order.id, self.order_item.id]
+        )
 
     def test_delete_order_item_success(self):
         # Test deleting an existing order item
@@ -284,25 +357,35 @@ class OrderItemDeleteViewTestCase(APITestCase):
 
     def test_delete_order_item_non_existing_item(self):
         # Test deleting a non-existing order item 999
-        invalid_order_item_url = reverse('order-item-update-delete', args=[self.order.id, 999])
+        invalid_order_item_url = reverse(
+            "order-item-update-delete", args=[self.order.id, 999]
+        )
         response = self.client.delete(invalid_order_item_url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_order_item_non_existing_order(self):
         # Test deleting an order item from a non-existing order 999
-        invalid_order_item_url = reverse('order-item-update-delete', args=[999, self.order_item.id])
+        invalid_order_item_url = reverse(
+            "order-item-update-delete", args=[999, self.order_item.id]
+        )
         response = self.client.delete(invalid_order_item_url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_order_item_as_different_customer(self):
         # Create order with a different customer than the one authenticated
-        other_user: User = User.objects.create_user(username='otheruser', password='testpassword')
+        other_user: User = User.objects.create_user(
+            username="otheruser", password="testpassword"
+        )
         other_customer: Customer = Customer.objects.create(user=other_user)
-        order: Order = Order.objects.create(customer=other_customer, location='in_house')
-        order_item = OrderItem.objects.create(order=order, item_id=self.product_variation.pk, quantity=2, price=10.0)
+        order: Order = Order.objects.create(
+            customer=other_customer, location="in_house"
+        )
+        order_item = OrderItem.objects.create(
+            order=order, item_id=self.product_variation.pk, quantity=2, price=10.0
+        )
 
         # Send a delete request to update the order item
-        url = reverse('order-item-update-delete', args=[order.id, order_item.id])
+        url = reverse("order-item-update-delete", args=[order.id, order_item.id])
         response = self.client.delete(url)
 
         # Verify the response status code is 403 Forbidden
@@ -310,35 +393,49 @@ class OrderItemDeleteViewTestCase(APITestCase):
 
     def test_delete_order_item_for_order_with_status_different_than_waiting(self):
         # Test delete order item for order with status different than waiting
-        order: Order = Order.objects.create(customer=self.customer, location='in_house', status=Order.PREPARATION)
-        order_item: OrderItem = OrderItem.objects.create(order=order, item_id=self.product_variation.pk, quantity=2, price=10.0)
-        url = reverse('order-item-update-delete', args=[order.id, order_item.id])
-        response = self.client.delete(url, format='json')
+        order: Order = Order.objects.create(
+            customer=self.customer, location="in_house", status=Order.PREPARATION
+        )
+        order_item: OrderItem = OrderItem.objects.create(
+            order=order, item_id=self.product_variation.pk, quantity=2, price=10.0
+        )
+        url = reverse("order-item-update-delete", args=[order.id, order_item.id])
+        response = self.client.delete(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(
             response.json(),
-            {'detail': 'The order cannot be modified when it is not in waiting status.'}
+            {
+                "detail": "The order cannot be modified when it is not in waiting status."
+            },
         )
 
 
 class OrderDetailViewTestCase(APITestCase):
     def setUp(self):
         # Create the user and authentication
-        self.user: User = User.objects.create_user(username='testuser', password='testpassword')
+        self.user: User = User.objects.create_user(
+            username="testuser", password="testpassword"
+        )
         token: RefreshToken = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(token.access_token)}')
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {str(token.access_token)}")
         self.customer: Customer = Customer.objects.create(user=self.user)
 
         # Create a test order
-        self.order: Order = Order.objects.create(customer=self.customer, location='in_house')
+        self.order: Order = Order.objects.create(
+            customer=self.customer, location="in_house"
+        )
 
         # Create a test order item
-        product: Product = Product.objects.create(name='Product 1', active=True)
-        self.product_variation: ProductVariation = ProductVariation.objects.create(product=product, name='Test Product Variation', active=True, price=10.0)
-        self.order_item = OrderItem.objects.create(order=self.order, item_id=self.product_variation.pk, quantity=2, price=10.0)
-        
+        product: Product = Product.objects.create(name="Product 1", active=True)
+        self.product_variation: ProductVariation = ProductVariation.objects.create(
+            product=product, name="Test Product Variation", active=True, price=10.0
+        )
+        self.order_item = OrderItem.objects.create(
+            order=self.order, item_id=self.product_variation.pk, quantity=2, price=10.0
+        )
+
     def test_get_order_details(self):
-        url = reverse('order-read-update', args=[self.order.id])
+        url = reverse("order-read-update", args=[self.order.id])
         response = self.client.get(url)
         # Assert response status code
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -347,7 +444,7 @@ class OrderDetailViewTestCase(APITestCase):
         self.assertEqual(response.data, expected_data)
 
     def test_get_order_details_invalid_order_id(self):
-        url = reverse('order-read-update', args=[9999])
+        url = reverse("order-read-update", args=[9999])
         response = self.client.get(url)
         # Assert response status code
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -355,8 +452,8 @@ class OrderDetailViewTestCase(APITestCase):
     def test_order_details_total_price(self):
         # Calculate the expected total price
         total_price = self.product_variation.price * self.order_item.quantity
-        
-        url = reverse('order-read-update', args=[self.order.id])
+
+        url = reverse("order-read-update", args=[self.order.id])
         response = self.client.get(url)
         # Assert response data
-        self.assertEqual(response.data['total_price'], total_price)
+        self.assertEqual(response.data["total_price"], total_price)
